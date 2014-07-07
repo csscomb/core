@@ -1,7 +1,7 @@
 {
     "name": "csscomb-core",
     "version": "1.0.0",
-    "description": "Framework for writing postprocessors. As seen in CSScomb and JScomb",
+    "description": "Framework for writing postprocessors",
     "dependencies": {
         "gonzales-pe": "~3.0.0",
         "minimatch": "0.2.12",
