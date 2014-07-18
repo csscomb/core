@@ -81,14 +81,16 @@ Process a single file.
 - Params: *{String}*  Path to file
 - Return: *{Promise}*
 
-### comb.processString(string, syntax, filename)
+### comb.processString(string, options)
 
 Process a string.
 
 - Params:  
   *{String}*  Code to process  
-  *{String}*  Syntax name *(default value is `css`)*  
-  *{String}*  File name *(optional, used to display error messages)*
+  *{{context: String, filename: String, syntax: String}}* Options (optional)
+  where *context* is
+  Gonzales PE rule, *filename* is a file's name that is used to display errors and
+  *syntax* is syntax name with `css` being a default value.  
 - Return: *{String}*  Processed string
 
 ## Writing a plugin
