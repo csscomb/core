@@ -1,6 +1,6 @@
 {
     "name": "csscomb-core",
-    "version": "2.0.2",
+    "version": "2.0.3",
     "description": "Framework for writing postprocessors",
     "dependencies": {
         "gonzales-pe": "~3.0.0-0",
