@@ -3,7 +3,7 @@
     "version": "2.0.3",
     "description": "Framework for writing postprocessors",
     "dependencies": {
-        "gonzales-pe": "~3.0.0-0",
+        "gonzales-pe": "3.0.0-10",
         "minimatch": "0.2.12",
         "vow": "0.4.4",
         "vow-fs": "0.3.2"
