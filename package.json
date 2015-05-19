@@ -8,6 +8,10 @@
         "vow": "0.4.4",
         "vow-fs": "0.3.2"
     },
+    "devDependencies": {
+        "jscoverage": "0.5.x",
+        "mocha": "1.20.x"
+    },
     "main": "lib/core.js",
     "maintainers": [{
         "name": "Tony Ganch",
@@ -15,5 +19,10 @@
         "web": "http://tonyganch.com/"
     }],
     "license": "MIT",
-    "repository": "https://github.com/csscomb/core"
+    "repository": "https://github.com/csscomb/core",
+    "scripts": {
+        "test": "./node_modules/.bin/mocha",
+        "cov": "./node_modules/.bin/mocha -r jscoverage --covout=html test >> /dev/null && open ./covreporter/index.html"
+    }
+
 }
