@@ -3,7 +3,7 @@
     "version": "2.0.4",
     "description": "Framework for writing postprocessors",
     "dependencies": {
-        "gonzales-pe": "~3.0.0-13",
+        "gonzales-pe": "3.0.0-28",
         "minimatch": "0.2.12",
         "vow": "0.4.4",
         "vow-fs": "0.3.2"
@@ -24,5 +24,4 @@
         "test": "./node_modules/.bin/mocha",
         "cov": "./node_modules/.bin/mocha -r jscoverage --covout=html test >> /dev/null && open ./covreporter/index.html"
     }
-
 }
