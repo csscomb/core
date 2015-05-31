@@ -1,27 +1,32 @@
 {
-    "name": "csscomb-core",
-    "version": "3.0.0-4",
-    "description": "Framework for writing postprocessors",
-    "dependencies": {
-        "gonzales-pe": "3.0.0-30",
-        "minimatch": "0.2.12",
-        "vow": "0.4.4",
-        "vow-fs": "0.3.2"
-    },
-    "devDependencies": {
-        "jscoverage": "0.5.x",
-        "mocha": "1.20.x"
-    },
-    "main": "lib/core.js",
-    "maintainers": [{
-        "name": "Tony Ganch",
-        "email": "tonyganch+github@gmail.com",
-        "web": "http://tonyganch.com/"
-    }],
-    "license": "MIT",
-    "repository": "https://github.com/csscomb/core",
-    "scripts": {
-        "test": "./node_modules/.bin/mocha",
-        "cov": "./node_modules/.bin/mocha -r jscoverage --covout=html test >> /dev/null && open ./covreporter/index.html"
+  "name": "csscomb-core",
+  "version": "3.0.0-4",
+  "description": "Framework for writing postprocessors",
+  "dependencies": {
+    "gonzales-pe": "3.0.0-30",
+    "minimatch": "0.2.12",
+    "vow": "0.4.4",
+    "vow-fs": "0.3.2"
+  },
+  "devDependencies": {
+    "babel-core": "^5.4.7",
+    "gulp": "^3.8.11",
+    "gulp-babel": "^5.1.0",
+    "jscoverage": "0.5.x",
+    "mocha": "1.20.x"
+  },
+  "main": "lib/core.js",
+  "maintainers": [
+    {
+      "name": "Tony Ganch",
+      "email": "tonyganch+github@gmail.com",
+      "web": "http://tonyganch.com/"
     }
+  ],
+  "license": "MIT",
+  "repository": "https://github.com/csscomb/core",
+  "scripts": {
+    "test": "./node_modules/.bin/mocha",
+    "cov": "./node_modules/.bin/mocha -r jscoverage --covout=html test >> /dev/null && open ./covreporter/index.html"
+  }
 }

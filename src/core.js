@@ -1,15 +1,13 @@
-'use strict';
+require("babel-core/polyfill");
+let gonzales = require('gonzales-pe');
+let minimatch = require('minimatch');
+let Errors = require('./errors');
+let Plugin = require('./plugin');
 
-require('babel-core/polyfill');
-var gonzales = require('gonzales-pe');
-var minimatch = require('minimatch');
-var Errors = require('./errors');
-var Plugin = require('./plugin');
+let vow = require('vow');
+let vfs = require('vow-fs');
 
-var vow = require('vow');
-var vfs = require('vow-fs');
-
-var Comb = function Comb() {
+let Comb = function() {
     this.plugins = [];
     this.pluginsDependencies = {};
     this.supportedSyntaxes = new Set();
@@ -53,24 +51,26 @@ Comb.prototype = {
      */
     verbose: null,
 
-    configure: function configure(config) {
+    configure(config) {
         if (typeof config !== 'object')
             // TODO: throw error
 
-            this.lint = config.lint;
+        this.lint = config.lint;
         this.verbose = config.verbose;
-        this.exclude = (config.exclude || []).map(function (pattern) {
+        this.exclude = (config.exclude || []).map(function(pattern) {
             return new minimatch.Minimatch(pattern);
         });
 
-        for (var i = 0, l = this.plugins.length; i < l; i++) {
-            var plugin = this.plugins[i];
-            var _name = plugin.name;
-            if (!config.hasOwnProperty(_name)) return;
+        for(let i = 0, l = this.plugins.length; i < l; i++) {
+            let plugin = this.plugins[i];
+            let name = plugin.name;
+            if (!config.hasOwnProperty(name)) return;
 
             try {
-                plugin.value = config[_name];
-            } catch (e) {}
+                plugin.value = config[name];
+            } catch (e) {
+                // TODO: throw error
+            }
         }
 
         // Chaining.
@@ -81,11 +81,11 @@ Comb.prototype = {
      * @param {String} path
      * @returns {Promise}
      */
-    lintDirectory: function lintDirectory(path) {
-        var lint = this.lint;
-        var that = this;
+    lintDirectory(path) {
+        let lint = this.lint;
+        let that = this;
         this.lint = true;
-        return this.processDirectory(path).then(function (errors) {
+        return this.processDirectory(path).then(function(errors) {
             that.lint = lint;
             return errors;
         });
@@ -95,11 +95,11 @@ Comb.prototype = {
      * @param {String} path
      * @returns {Promise}
      */
-    lintFile: function lintFile(path) {
-        var lint = this.lint;
-        var that = this;
+    lintFile(path) {
+        let lint = this.lint;
+        let that = this;
         this.lint = true;
-        return this.processFile(path).then(function (errors) {
+        return this.processFile(path).then(function(errors) {
             that.lint = lint;
             return errors;
         });
@@ -109,11 +109,11 @@ Comb.prototype = {
      * @param {String} path
      * @returns {Promise}
      */
-    lintPath: function lintPath(path) {
-        var lint = this.lint;
-        var that = this;
+    lintPath(path) {
+        let lint = this.lint;
+        let that = this;
         this.lint = true;
-        return this.processPath(path).then(function (errors) {
+        return this.processPath(path).then(function(errors) {
             that.lint = lint;
             return errors;
         });
@@ -124,10 +124,10 @@ Comb.prototype = {
      * @param {{context: String, filename: String, syntax: String}} options
      * @returns {Array} List of found errors
      */
-    lintString: function lintString(text, options) {
-        var lint = this.lint;
+    lintString(text, options) {
+        let lint = this.lint;
         this.lint = true;
-        var errors = this.processString(text, options);
+        let errors = this.processString(text, options);
         this.lint = lint;
         return errors;
     },
@@ -138,18 +138,20 @@ Comb.prototype = {
      * @param {String=} filename
      * @return {Array} List of errors
      */
-    lintTree: function lintTree(ast, syntax, filename) {
-        var errors = [];
+    lintTree(ast, syntax, filename) {
+        let errors = [];
 
-        this.plugins.filter(function (plugin) {
-            return typeof plugin.value !== null && typeof plugin.lint === 'function' && plugin.syntax.indexOf(syntax) !== -1;
-        }).forEach(function (plugin) {
-            var e = plugin.lint(ast, syntax);
+        this.plugins.filter(function(plugin) {
+            return typeof plugin.value !== null &&
+                   typeof plugin.lint === 'function' &&
+                   plugin.syntax.indexOf(syntax) !== -1;
+        }).forEach(function(plugin) {
+            let e = plugin.lint(ast, syntax);
             errors = errors.concat(e);
         });
 
         if (filename) {
-            errors.map(function (error) {
+            errors.map(function(error) {
                 error.filename = filename;
                 return error;
             });
@@ -158,13 +160,13 @@ Comb.prototype = {
         return errors;
     },
 
-    pluginAlreadyUsed: function pluginAlreadyUsed(name) {
+    pluginAlreadyUsed(name) {
         return this.pluginIndex(name) !== -1;
     },
 
-    pluginIndex: function pluginIndex(name) {
-        var index = -1;
-        this.plugins.some(function (plugin, i) {
+    pluginIndex(name) {
+        let index = -1;
+        this.plugins.some(function(plugin, i) {
             if (plugin.name === name) {
                 index = i;
                 return true;
@@ -179,20 +181,20 @@ Comb.prototype = {
      * @param {String} path
      * @returns {Promise}
      */
-    processDirectory: function processDirectory(path) {
-        var that = this;
+    processDirectory(path) {
+        let that = this;
 
-        return vfs.listDir(path).then(function (filenames) {
-            return vow.all(filenames.map(function (filename) {
-                var fullname = path + '/' + filename;
-                return vfs.stat(fullname).then(function (stat) {
+        return vfs.listDir(path).then(function(filenames) {
+            return vow.all(filenames.map(function(filename) {
+                let fullname = path + '/' + filename;
+                return vfs.stat(fullname).then(function(stat) {
                     if (stat.isDirectory() && that.shouldProcess(fullname)) {
                         return that.processDirectory(fullname);
                     } else {
                         return that.processFile(fullname);
                     }
                 });
-            })).then(function (results) {
+            })).then(function(results) {
                 return [].concat.apply([], results);
             });
         });
@@ -204,14 +206,14 @@ Comb.prototype = {
      * @param {String} path
      * @returns {Promise}
      */
-    processFile: function processFile(path) {
-        var that = this;
+    processFile(path) {
+        let that = this;
 
         if (!this.shouldProcessFile(path)) return;
 
-        return vfs.read(path, 'utf8').then(function (data) {
-            var syntax = path.split('.').pop();
-            var processedData = that.processString(data, { syntax: syntax, filename: path });
+        return vfs.read(path, 'utf8').then(function(data) {
+            let syntax = path.split('.').pop();
+            let processedData = that.processString(data, { syntax: syntax, filename: path });
 
             if (that.lint) return processedData;
 
@@ -220,7 +222,7 @@ Comb.prototype = {
                 return 0;
             }
 
-            return vfs.write(path, processedData, 'utf8').then(function () {
+            return vfs.write(path, processedData, 'utf8').then(function() {
                 if (that.verbose) console.log('✓', path);
                 return 1;
             });
@@ -233,16 +235,16 @@ Comb.prototype = {
      * @param {String} path
      * @returns {Promise}
      */
-    processPath: function processPath(path) {
-        var that = this;
+    processPath(path) {
+        let that = this;
         path = path.replace(/\/$/, '');
 
-        return vfs.exists(path).then(function (exists) {
+        return vfs.exists(path).then(function(exists) {
             if (!exists) {
                 console.warn('Path ' + path + ' was not found.');
                 return;
             }
-            return vfs.stat(path).then(function (stat) {
+            return vfs.stat(path).then(function(stat) {
                 if (stat.isDirectory()) {
                     return that.processDirectory(path);
                 } else {
@@ -259,11 +261,11 @@ Comb.prototype = {
      * @param {{context: String, filename: String, syntax: String}} options
      * @returns {String} Processed string
      */
-    processString: function processString(text, options) {
-        var syntax = options && options.syntax;
-        var filename = options && options.filename || '';
-        var context = options && options.context;
-        var tree = undefined;
+    processString(text, options) {
+        let syntax = options && options.syntax;
+        let filename = options && options.filename || '';
+        let context = options && options.context;
+        let tree;
 
         if (!text) return this.lint ? [] : text;
 
@@ -273,8 +275,8 @@ Comb.prototype = {
         try {
             tree = gonzales.parse(text, { syntax: syntax, rule: context });
         } catch (e) {
-            var version = require('../package.json').version;
-            var message = filename ? [filename] : [];
+            let version = require('../package.json').version;
+            let message = filename ? [filename] : [];
             message.push(e.message);
             message.push('CSScomb Core version: ' + version);
             e.stack = e.message = message.join('\n');
@@ -293,10 +295,12 @@ Comb.prototype = {
      * @param {String} syntax
      * @return {Node} Transformed AST
      */
-    processTree: function processTree(ast, syntax) {
-        this.plugins.filter(function (plugin) {
-            return plugin.value !== null && typeof plugin.process === 'function' && plugin.syntax.indexOf(syntax) !== -1;
-        }).forEach(function (plugin) {
+    processTree(ast, syntax) {
+        this.plugins.filter(function(plugin) {
+            return plugin.value !== null &&
+                   typeof plugin.process === 'function' &&
+                   plugin.syntax.indexOf(syntax) !== -1;
+        }).forEach(function(plugin) {
             plugin.process(ast, syntax);
         });
 
@@ -310,9 +314,9 @@ Comb.prototype = {
      * @returns {Boolean} False if specified path is present in `exclude` list.
      * Otherwise returns true.
      */
-    shouldProcess: function shouldProcess(path) {
+    shouldProcess(path) {
         path = path.replace(/^\.\//, '');
-        this.exclude.every(function (e) {
+        this.exclude.every(function(e) {
             return !e.match(path);
         });
     },
@@ -325,12 +329,13 @@ Comb.prototype = {
      * @returns {Boolean} False if the path either has unacceptable extension or
      * is present in `exclude` list. True if everything is ok.
      */
-    shouldProcessFile: function shouldProcessFile(path) {
+    shouldProcessFile(path) {
         // Get file's extension:
         var syntax = path.split('.').pop();
 
         // Check if syntax is supported. If not, ignore the file:
-        if (this.supportedSyntaxes.has(syntax)) return false;
+        if (this.supportedSyntaxes.has(syntax))
+            return false;
 
         return this.shouldProcess(path);
     },
@@ -340,50 +345,51 @@ Comb.prototype = {
      * @param {Object} options
      * @return {Comb}
      */
-    use: function use(options) {
+    use(options) {
         // Check whether plugin with the same is already used.
-        var pluginName = options.name;
+        let pluginName = options.name;
         if (this.pluginAlreadyUsed(pluginName)) {
-            if (this.verbose) console.warn(Errors.twoPluginsWithSameName);
+            if (this.verbose)
+                console.warn(Errors.twoPluginsWithSameName);
             return;
         }
 
-        var plugin = new Plugin(options);
+        let plugin = new Plugin(options);
 
-        plugin.syntax.forEach(function (s) {
+        plugin.syntax.forEach(function(s) {
             this.supportedSyntaxes.add(s);
         }, this);
 
         // Sort plugins.
-        var pluginToRunBefore = plugin.runBefore;
+        let pluginToRunBefore = plugin.runBefore;
 
         if (!pluginToRunBefore) {
             this.plugins.push(plugin);
         } else {
             if (this.pluginAlreadyUsed(pluginToRunBefore)) {
-                var i = this.pluginIndex(pluginToRunBefore);
+                let i = this.pluginIndex(pluginToRunBefore);
                 this.plugins.splice(i, 0, plugin);
             } else {
                 this.plugins.push(plugin);
-                if (!this.pluginsDependencies[pluginToRunBefore]) this.pluginsDependencies[pluginToRunBefore] = [];
+                if (!this.pluginsDependencies[pluginToRunBefore])
+                    this.pluginsDependencies[pluginToRunBefore] = [];
                 this.pluginsDependencies[pluginToRunBefore].push(pluginName);
             }
         }
 
-        var dependents = this.pluginsDependencies[pluginName];
+        let dependents = this.pluginsDependencies[pluginName];
         if (!dependents) return;
 
-        for (var i = 0, l = dependents.length; i < l; i++) {
-            var _name2 = dependents[i];
-            var x = this.pluginIndex(_name2);
+        for(let i = 0, l = dependents.length; i < l; i++) {
+            let name = dependents[i];
+            let x = this.pluginIndex(name);
             this.plugins.splice(x, 1);
             this.plugins.splice(-1, 0, plugin);
         };
 
         // Chaining.
         return this;
-    } };
+    },
+};
 
 module.exports = Comb;
-
-// TODO: throw error

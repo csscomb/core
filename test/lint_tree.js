@@ -4,39 +4,37 @@ var Comb = require('../lib/core');
 var assert = require('assert');
 var gonzales = require('gonzales-pe');
 
-describe('lintTree()', function() {
+describe.only('lintTree()', function() {
     it('Skip handlers that do not support given syntax', function() {
         var comb = new Comb();
         var ast = {};
-        comb.syntax = 'less';
-        comb._.handlers = [{
+        comb.plugins = [{
             syntax: ['css']
         }];
-        assert.deepEqual([], comb._.lintTree(ast));
+        assert.deepEqual([], comb.lintTree(ast, 'less'));
     });
 
     it('Skip handlers that have no `lint` method', function() {
         var comb = new Comb();
         var ast = {};
-        comb.syntax = 'css';
-        comb._.handlers = [{
+        comb.plugins = [{
             syntax: ['css']
         }];
-        assert.deepEqual([], comb._.lintTree(ast));
+        assert.deepEqual([], comb.lintTree(ast, 'css'));
     });
 
     it('Should lint, one error', function() {
         var comb = new Comb();
         var ast = originalAST = gonzales.parse('a{color:red}');
         var error = {line:1, column: 7, message: 'foo'};
-        comb.syntax = 'css';
-        comb._.handlers = [{
+        comb.plugins = [{
+            value: true,
             syntax: ['css'],
-            lint: function(node) {
-                if (node.content === 'red') return error;
+            lint: function() {
+                return [error];
             }
         }];
-        assert.deepEqual([error], comb._.lintTree(ast));
+        assert.deepEqual([error], comb.lintTree(ast, 'css'));
         // Should not modify ast:
         assert.deepEqual(originalAST, ast);
     });
@@ -45,14 +43,13 @@ describe('lintTree()', function() {
         var comb = new Comb();
         var ast = originalAST = gonzales.parse('a{color:red}');
         var error = {line:1, column: 7, message: 'foo'};
-        comb.syntax = 'css';
-        comb._.handlers = [{
+        comb.plugins = [{
             syntax: ['css'],
             lint: function(node) {
-                if (node.content === 'red') return [error, error];
+                return [error, error];
             }
         }];
-        assert.deepEqual([error, error], comb._.lintTree(ast));
+        assert.deepEqual([error, error], comb.lintTree(ast, 'css'));
         // Should not modify ast:
         assert.deepEqual(originalAST, ast);
     });
