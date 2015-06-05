@@ -7,12 +7,15 @@ let vow = require('vow');
 let vfs = require('vow-fs');
 
 let Comb = function() {
+    this.config = {};
     this.plugins = [];
     this.pluginsDependencies = {};
     this.supportedSyntaxes = new Set();
 };
 
 Comb.prototype = {
+    config: null,
+
     exclude: null,
 
     /**
@@ -63,10 +66,11 @@ Comb.prototype = {
         for(let i = 0, l = this.plugins.length; i < l; i++) {
             let plugin = this.plugins[i];
             let name = plugin.name;
-            if (!config.hasOwnProperty(name)) return;
+            if (!config.hasOwnProperty(name)) continue;
 
             try {
                 plugin.value = config[name];
+                this.config[name] = plugin.value;
             } catch (e) {
                 // TODO: throw error
             }
@@ -139,13 +143,14 @@ Comb.prototype = {
      */
     lintTree(ast, syntax, filename) {
         let errors = [];
+        let config = this.config;
 
         this.plugins.filter(function(plugin) {
             return typeof plugin.value !== null &&
                    typeof plugin.lint === 'function' &&
                    plugin.syntax.indexOf(syntax) !== -1;
         }).forEach(function(plugin) {
-            let e = plugin.lint(ast, syntax);
+            let e = plugin.lint(ast, syntax, config);
             errors = errors.concat(e);
         });
 
@@ -295,12 +300,14 @@ Comb.prototype = {
      * @return {Node} Transformed AST
      */
     processTree(ast, syntax) {
+        let config = this.config;
+
         this.plugins.filter(function(plugin) {
             return plugin.value !== null &&
                    typeof plugin.process === 'function' &&
                    plugin.syntax.indexOf(syntax) !== -1;
         }).forEach(function(plugin) {
-            plugin.process(ast, syntax);
+            plugin.process(ast, syntax, config);
         });
 
         return ast;
@@ -382,6 +389,7 @@ Comb.prototype = {
         for(let i = 0, l = dependents.length; i < l; i++) {
             let name = dependents[i];
             let x = this.pluginIndex(name);
+            let plugin = this.plugins[x];
             this.plugins.splice(x, 1);
             this.plugins.splice(-1, 0, plugin);
         };
