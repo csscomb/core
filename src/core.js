@@ -323,7 +323,7 @@ Comb.prototype = {
      */
     shouldProcess(path) {
         path = path.replace(/^\.\//, '');
-        this.exclude.every(function(e) {
+        return this.exclude.every(function(e) {
             return !e.match(path);
         });
     },
@@ -341,7 +341,7 @@ Comb.prototype = {
         var syntax = path.split('.').pop();
 
         // Check if syntax is supported. If not, ignore the file:
-        if (this.supportedSyntaxes.has(syntax))
+        if (!this.supportedSyntaxes.has(syntax))
             return false;
 
         return this.shouldProcess(path);
