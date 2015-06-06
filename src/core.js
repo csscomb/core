@@ -1,3 +1,4 @@
+require("babel/polyfill");
 let gonzales = require('gonzales-pe');
 let minimatch = require('minimatch');
 let Errors = require('./errors');
