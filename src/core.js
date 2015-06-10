@@ -291,7 +291,7 @@ Comb.prototype = {
         if (this.lint) {
             return this.lintTree(tree, syntax, filename);
         } else {
-            return this.processTree(tree, syntax).toCSS(syntax);
+            return this.processTree(tree, syntax).toString();
         }
     },
 
