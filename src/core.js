@@ -1,3 +1,4 @@
+require('babel/polyfill');
 let gonzales = require('gonzales-pe');
 let minimatch = require('minimatch');
 let Errors = require('./errors');
@@ -117,23 +118,25 @@ class Comb {
     let errors = [];
     let config = this.config;
 
-    this.plugins.filter(function(plugin) {
-      return typeof plugin.value !== null &&
-             typeof plugin.lint === 'function' &&
-             plugin.syntax.indexOf(syntax) !== -1;
-    }).forEach(function(plugin) {
-      let e = plugin.lint(ast, syntax, config);
-      errors = errors.concat(e);
-    });
-
-    if (filename) {
-      errors.map(function(error) {
-        error.filename = filename;
-        return error;
+    return new Promise((resolve) => {
+      this.plugins.filter(function(plugin) {
+        return typeof plugin.value !== null &&
+               typeof plugin.lint === 'function' &&
+               plugin.syntax.indexOf(syntax) !== -1;
+      }).forEach(function(plugin) {
+        let e = plugin.lint(ast, syntax, config);
+        errors = errors.concat(e);
       });
-    }
 
-    return errors;
+      if (filename) {
+        errors.map(function(error) {
+          error.filename = filename;
+          return error;
+        });
+      }
+
+      resolve(errors);
+    });
   }
 
   pluginAlreadyUsed(name) {

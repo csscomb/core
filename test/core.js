@@ -1,4 +1,5 @@
 var assert = require('assert');
+var gonzales = require('gonzales-pe');
 var minimatch = require('minimatch');
 var Comb = require('../lib/core');
 
@@ -41,6 +42,13 @@ describe('Core methods', function() {
       var config = {animal: 'panda'};
       comb.configure(config);
       assert.deepEqual(comb.config, {});
+    });
+  });
+
+  describe('lintTree', function() {
+    it('should return promise', function() {
+      var ast = require('./helpers/ast-1');
+      assert(typeof comb.lintTree(ast).then, 'function');
     });
   });
 });
