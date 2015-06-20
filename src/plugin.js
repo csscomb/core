@@ -51,42 +51,42 @@ Plugin.prototype = {
     }
 
     if (!pattern)
-        throw new Error(Errors.unacceptableValueType);
+        throw new Error(Errors.unacceptableValueType(valueType, this.accepts));
 
     if (valueType === 'boolean') {
       if (pattern.indexOf(value) < 0)
-        throw new Error(Errors.unacceptableBoolean);
+        throw new Error(Errors.unacceptableBoolean(pattern));
       this.value_ = value;
       return this.value_;
     }
 
     if (valueType === 'number') {
       if (value !== parseInt(value))
-        throw new Error(Errors.unacceptableNumber);
+        throw new Error(Errors.unacceptableNumber());
       this.value_ = new Array(value + 1).join(' ');
       return this.value_;
     }
 
     if (valueType = 'string') {
       if (!value.match(pattern))
-        throw new Error(Errors.unacceptableString);
+        throw new Error(Errors.unacceptableString(pattern));
       this.value_ = value;
       return this.value_;
     }
 
-    throw new Error(Errors.implementSetValue);
+    throw new Error(Errors.implementSetValue(valueType));
   },
 
   validate() {
     if (typeof this.name !== 'string' || !this.name)
-      throw new Error(Errors.missingName);
+      throw new Error(Errors.missingName());
 
     if (!Array.isArray(this.syntax) || this.syntax.length === 0)
-      throw new Error(Errors.missingSyntax);
+      throw new Error(Errors.missingSyntax());
 
     if (typeof this.accepts !== 'object' &&
         typeof this.setValue !== 'function')
-      throw new Error(Errors.missingSetValue);
+      throw new Error(Errors.missingSetValue());
   }
 };
 
