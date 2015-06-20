@@ -140,31 +140,6 @@ describe('Core methods', function() {
     });
   });
 
-  describe('lintTree', function() {
-    var ast = require('./helpers/ast_css');
-    var plugin = require('./helpers/plugin_css_lint_1_error');
-
-    it('should return promise', function() {
-      assert(typeof comb.lintTree(ast).then, 'function');
-    });
-
-    it('should return 1 error', function(done) {
-      comb.use(plugin).configure({option1: true})
-          .lintTree(ast).then(function(errors) {
-            assert.equal(errors.length, 1);
-            done();
-          });
-    });
-
-    it('should add filename to errors', function(done) {
-      comb.use(plugin).configure({option1: true})
-          .lintTree(ast, 'panda').then(function(errors) {
-            assert.equal(errors[0].filename, 'panda');
-            done();
-          });
-    });
-  });
-
   describe('processString', function() {
     var plugin = require('./helpers/plugin_css_lint_1_error');
     var string = fs.readFileSync(__dirname + '/helpers/file.css', 'utf-8');
@@ -184,17 +159,42 @@ describe('Core methods', function() {
     });
   });
 
-  describe('processTree', function() {
+  describe('_lintTree', function() {
     var ast = require('./helpers/ast_css');
     var plugin = require('./helpers/plugin_css_lint_1_error');
 
     it('should return promise', function() {
-      assert(typeof comb.processTree(ast).then, 'function');
+      assert(typeof comb._lintTree(ast).then, 'function');
+    });
+
+    it('should return 1 error', function(done) {
+      comb.use(plugin).configure({option1: true})
+          ._lintTree(ast).then(function(errors) {
+            assert.equal(errors.length, 1);
+            done();
+          });
+    });
+
+    it('should add filename to errors', function(done) {
+      comb.use(plugin).configure({option1: true})
+          ._lintTree(ast, 'panda').then(function(errors) {
+            assert.equal(errors[0].filename, 'panda');
+            done();
+          });
+    });
+  });
+
+  describe('_processTree', function() {
+    var ast = require('./helpers/ast_css');
+    var plugin = require('./helpers/plugin_css_lint_1_error');
+
+    it('should return promise', function() {
+      assert(typeof comb._processTree(ast).then, 'function');
     });
 
     it('should return modified ast', function(done) {
       comb.use(plugin).configure({option1: true})
-          .processTree(ast).then(function(ast) {
+          ._processTree(ast).then(function(ast) {
             var numberOfSpaces = ast.toString().split(' ').length - 1;
             // There should be 2 spaces left inside comment.
             assert.equal(numberOfSpaces, 2);

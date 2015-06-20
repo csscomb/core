@@ -54,30 +54,12 @@ class Comb {
     return this;
   }
 
-  getAcceptableFilesFromDirectory(path) {
-    if (!this.shouldProcess(path)) return;
-
-    let files = [];
-    let filesInThisDir = fs.readdirSync(path);
-
-    for (let i = 0, fl = filesInThisDir.length; i < fl; i++) {
-      let fullname = path + '/' + filesInThisDir[i];
-      let stat = fs.statSync(fullname);
-      if (stat.isDirectory() && this.shouldProcess(fullname))
-        files = files.concat(this.getAcceptableFilesFromDirectory(fullname));
-      else if (this.shouldProcessFile(fullname))
-        files.push(fullname);
-    }
-
-    return files;
-  }
-
   /**
    * @param {String} path
    * @returns {Promise}
    */
   lintDirectory(path) {
-    let files = this.getAcceptableFilesFromDirectory(path);
+    let files = this._getAcceptableFilesFromDirectory(path);
     let promises = files.map((file) => this.lintFile(file));
     return Promise.all(promises);
   }
@@ -88,7 +70,7 @@ class Comb {
    */
   lintFile(path) {
     let syntax = path.split('.').pop();
-    return this.readFile(path).then((string) => {
+    return this._readFile(path).then((string) => {
       return this.lintString(string, {syntax: syntax, filename: path});
     });
   }
@@ -109,79 +91,8 @@ class Comb {
    * @returns {Promise} Resolves with <Array> list of found errors.
    */
   lintString(text, options) {
-    return this.parseString(text, options)
-      .then(this.lintTree.bind(this));
-  }
-
-  /**
-   * @param {Node} ast
-   * @param {String=} filename
-   * @return {Promise} Resolves with <Array> list of errors.
-   */
-  lintTree(ast, filename) {
-    let errors = [];
-    let config = this.config;
-
-    return new Promise((resolve) => {
-      this.plugins.filter(function(plugin) {
-        return typeof plugin.value !== null &&
-               typeof plugin.lint === 'function' &&
-               plugin.syntax.indexOf(ast.syntax) !== -1;
-      }).forEach(function(plugin) {
-        let e = plugin.lint(ast, config);
-        errors = errors.concat(e);
-      });
-
-      if (filename) {
-        errors.map(function(error) {
-          error.filename = filename;
-          return error;
-        });
-      }
-
-      resolve(errors);
-    });
-  }
-
-  parseString(text, options) {
-    let syntax = options && options.syntax;
-    let filename = options && options.filename || '';
-    let context = options && options.context;
-    let tree;
-
-    if (!text) return this.lint ? [] : text;
-
-    if (!syntax) syntax = 'css';
-    this.syntax = syntax;
-
-    return new Promise(function(resolve) {
-      try {
-        tree = gonzales.parse(text, {syntax: syntax, rule: context});
-        resolve(tree, filename);
-      } catch (e) {
-        let version = require('../package.json').version;
-        let message = filename ? [filename] : [];
-        message.push(e.message);
-        message.push('CSScomb Core version: ' + version);
-        e.stack = e.message = message.join('\n');
-        throw e;
-      }
-    });
-  }
-
-  pluginAlreadyUsed(name) {
-    return this.pluginIndex(name) !== -1;
-  }
-
-  pluginIndex(name) {
-    let index = -1;
-    this.plugins.some(function(plugin, i) {
-      if (plugin.name === name) {
-        index = i;
-        return true;
-      }
-    });
-    return index;
+    return this._parseString(text, options)
+      .then(this._lintTree.bind(this));
   }
 
   /**
@@ -197,7 +108,7 @@ class Comb {
       return vow.all(filenames.map(function(filename) {
         let fullname = path + '/' + filename;
         return vfs.stat(fullname).then(function(stat) {
-          if (stat.isDirectory() && that.shouldProcess(fullname)) {
+          if (stat.isDirectory() && that._shouldProcess(fullname)) {
             return that.processDirectory(fullname);
           } else {
             return that.processFile(fullname);
@@ -218,7 +129,7 @@ class Comb {
   processFile(path) {
     let that = this;
 
-    if (!this.shouldProcessFile(path)) return;
+    if (!this._shouldProcessFile(path)) return;
 
     return vfs.read(path, 'utf8').then(function(data) {
       let syntax = path.split('.').pop();
@@ -240,18 +151,6 @@ class Comb {
       });
     });
   }
-
-  readFile(path) {
-    return new Promise((resolve, reject) => {
-      if (!this.shouldProcessFile(path)) reject();
-
-      fs.readFile(path, 'utf8', function(e, string) {
-        if (e) reject();
-        resolve(string);
-      });
-    });
-  }
-
 
   /**
    * Processes directory or file.
@@ -279,16 +178,157 @@ class Comb {
    * @returns {String} Processed string
    */
   processString(text, options) {
-    return this.parseString(text, options)
-        .then(this.processTree.bind(this))
+    return this._parseString(text, options)
+        .then(this._processTree.bind(this))
         .then((ast) => ast.toString());
+  }
+
+  /**
+   * Add a plugin.
+   * @param {Object} options
+   * @return {Comb}
+   */
+  use(options) {
+    // Check whether plugin with the same is already used.
+    let pluginName = options.name;
+    if (this._pluginAlreadyUsed(pluginName)) {
+      if (this.verbose)
+        console.warn(Errors.twoPluginsWithSameName(pluginName));
+      return;
+    }
+
+    let plugin = new Plugin(options);
+
+    plugin.syntax.forEach(function(s) {
+      this.supportedSyntaxes.add(s);
+    }, this);
+
+    // Sort plugins.
+    let pluginToRunBefore = plugin.runBefore;
+
+    if (!pluginToRunBefore) {
+      this.plugins.push(plugin);
+    } else {
+      if (this._pluginAlreadyUsed(pluginToRunBefore)) {
+        let i = this._pluginIndex(pluginToRunBefore);
+        this.plugins.splice(i, 0, plugin);
+      } else {
+        this.plugins.push(plugin);
+        if (!this.pluginsDependencies[pluginToRunBefore])
+          this.pluginsDependencies[pluginToRunBefore] = [];
+        this.pluginsDependencies[pluginToRunBefore].push(pluginName);
+      }
+    }
+
+    let dependents = this.pluginsDependencies[pluginName];
+    if (!dependents) return this;
+
+    for (let i = 0, l = dependents.length; i < l; i++) {
+      let name = dependents[i];
+      let x = this._pluginIndex(name);
+      let plugin = this.plugins[x];
+      this.plugins.splice(x, 1);
+      this.plugins.splice(-1, 0, plugin);
+    }
+
+    // Chaining.
+    return this;
+  }
+
+  _getAcceptableFilesFromDirectory(path) {
+    if (!this._shouldProcess(path)) return;
+
+    let files = [];
+    let filesInThisDir = fs.readdirSync(path);
+
+    for (let i = 0, fl = filesInThisDir.length; i < fl; i++) {
+      let fullname = path + '/' + filesInThisDir[i];
+      let stat = fs.statSync(fullname);
+      if (stat.isDirectory() && this._shouldProcess(fullname))
+        files = files.concat(this._getAcceptableFilesFromDirectory(fullname));
+      else if (this._shouldProcessFile(fullname))
+        files.push(fullname);
+    }
+
+    return files;
+  }
+
+  /**
+   * @param {Node} ast
+   * @param {String=} filename
+   * @return {Promise} Resolves with <Array> list of errors.
+   */
+  _lintTree(ast, filename) {
+    let errors = [];
+    let config = this.config;
+
+    return new Promise((resolve) => {
+      this.plugins.filter(function(plugin) {
+        return typeof plugin.value !== null &&
+               typeof plugin.lint === 'function' &&
+               plugin.syntax.indexOf(ast.syntax) !== -1;
+      }).forEach(function(plugin) {
+        let e = plugin.lint(ast, config);
+        errors = errors.concat(e);
+      });
+
+      if (filename) {
+        errors.map(function(error) {
+          error.filename = filename;
+          return error;
+        });
+      }
+
+      resolve(errors);
+    });
+  }
+
+  _parseString(text, options) {
+    let syntax = options && options.syntax;
+    let filename = options && options.filename || '';
+    let context = options && options.context;
+    let tree;
+
+    if (!text) return this.lint ? [] : text;
+
+    if (!syntax) syntax = 'css';
+    this.syntax = syntax;
+
+    return new Promise(function(resolve) {
+      try {
+        tree = gonzales.parse(text, {syntax: syntax, rule: context});
+        resolve(tree, filename);
+      } catch (e) {
+        let version = require('../package.json').version;
+        let message = filename ? [filename] : [];
+        message.push(e.message);
+        message.push('CSScomb Core version: ' + version);
+        e.stack = e.message = message.join('\n');
+        throw e;
+      }
+    });
+  }
+
+  _pluginAlreadyUsed(name) {
+    return this._pluginIndex(name) !== -1;
+  }
+
+  _pluginIndex(name) {
+    let index = -1;
+    this.plugins.some(function(plugin, i) {
+      if (plugin.name === name) {
+        index = i;
+        return true;
+      }
+    });
+    return index;
   }
 
   /**
    * @param {Node} ast
    * @return {Node} Transformed AST
    */
-  processTree(ast) {
+  _processTree(ast) {
     let config = this.config;
 
     return new Promise((resolve) => {
@@ -304,6 +344,17 @@ class Comb {
     });
   }
 
+  _readFile(path) {
+    return new Promise((resolve, reject) => {
+      if (!this._shouldProcessFile(path)) reject();
+
+      fs.readFile(path, 'utf8', function(e, string) {
+        if (e) reject();
+        resolve(string);
+      });
+    });
+  }
+
   /**
    * Checks if path is not present in `exclude` list.
    *
@@ -311,7 +362,7 @@ class Comb {
    * @returns {Boolean} False if specified path is present in `exclude` list.
    * Otherwise returns true.
    */
-  shouldProcess(path) {
+  _shouldProcess(path) {
     path = path.replace(/\/$/, '');
     if (!fs.existsSync(path)) {
       console.warn('Path ' + path + ' was not found.');
@@ -332,7 +383,7 @@ class Comb {
    * @returns {Boolean} False if the path either has unacceptable extension or
    * is present in `exclude` list. True if everything is ok.
    */
-  shouldProcessFile(path) {
+  _shouldProcessFile(path) {
     // Get file's extension:
     var syntax = path.split('.').pop();
 
@@ -340,59 +391,7 @@ class Comb {
     if (!this.supportedSyntaxes.has(syntax))
       return false;
 
-    return this.shouldProcess(path);
-  }
-
-  /**
-   * Add a plugin.
-   * @param {Object} options
-   * @return {Comb}
-   */
-  use(options) {
-    // Check whether plugin with the same is already used.
-    let pluginName = options.name;
-    if (this.pluginAlreadyUsed(pluginName)) {
-      if (this.verbose)
-        console.warn(Errors.twoPluginsWithSameName(pluginName));
-      return;
-    }
-
-    let plugin = new Plugin(options);
-
-    plugin.syntax.forEach(function(s) {
-      this.supportedSyntaxes.add(s);
-    }, this);
-
-    // Sort plugins.
-    let pluginToRunBefore = plugin.runBefore;
-
-    if (!pluginToRunBefore) {
-      this.plugins.push(plugin);
-    } else {
-      if (this.pluginAlreadyUsed(pluginToRunBefore)) {
-        let i = this.pluginIndex(pluginToRunBefore);
-        this.plugins.splice(i, 0, plugin);
-      } else {
-        this.plugins.push(plugin);
-        if (!this.pluginsDependencies[pluginToRunBefore])
-          this.pluginsDependencies[pluginToRunBefore] = [];
-        this.pluginsDependencies[pluginToRunBefore].push(pluginName);
-      }
-    }
-
-    let dependents = this.pluginsDependencies[pluginName];
-    if (!dependents) return this;
-
-    for (let i = 0, l = dependents.length; i < l; i++) {
-      let name = dependents[i];
-      let x = this.pluginIndex(name);
-      let plugin = this.plugins[x];
-      this.plugins.splice(x, 1);
-      this.plugins.splice(-1, 0, plugin);
-    }
-
-    // Chaining.
-    return this;
+    return this._shouldProcess(path);
   }
 }
 
