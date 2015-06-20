@@ -1,1 +1,1 @@
-./node_modules/.bin/mocha -r jscoverage --covout=html test >> /dev/null && open ./covreporter/index.html
+./node_modules/.bin/unit-coverage run -a lib -s 'lib/**' -a test -t 'test/**' -r html -o coverage.html -- lib test
