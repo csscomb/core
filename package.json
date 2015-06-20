@@ -10,8 +10,8 @@
   },
   "devDependencies": {
     "babel": "^5.5.3",
-    "jscoverage": "0.5.x",
-    "mocha": "1.20.x"
+    "mocha": "1.20.x",
+    "unit-coverage": "3.4.x"
   },
   "files": [
     "lib"
@@ -28,7 +28,7 @@
   "repository": "https://github.com/csscomb/core",
   "scripts": {
     "build": "./scripts/build.sh",
-    "coverage": "./scripts/coverage.sh",
+    "coverage": "./scripts/build.sh && ./scripts/coverage.sh",
     "test": "./scripts/build.sh && ./scripts/test.sh"
   }
 }
