@@ -27,6 +27,7 @@ class Comb {
   configure(config) {
     if (typeof config !== 'object')
       // TODO: throw error
+      throw new Error();
 
     this.lint = config.lint;
     this.verbose = config.verbose;
