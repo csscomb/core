@@ -360,7 +360,7 @@ Comb.prototype = {
     let pluginName = options.name;
     if (this.pluginAlreadyUsed(pluginName)) {
       if (this.verbose)
-        console.warn(Errors.twoPluginsWithSameName);
+        console.warn(Errors.twoPluginsWithSameName(pluginName));
       return;
     }
 
