@@ -7,52 +7,22 @@ let Plugin = require('./plugin');
 let vow = require('vow');
 let vfs = require('vow-fs');
 
-let Comb = function() {
-  this.config = {};
-  this.plugins = [];
-  this.pluginsDependencies = {};
-  this.supportedSyntaxes = new Set();
-};
-
-Comb.prototype = {
-  config: null,
-
-  exclude: null,
-
-  /**
-   * Whether lint mode is on.
-   * @type {Boolean}
-   */
-  lint: null,
-
-  /**
-   * List of file paths that should be excluded from processing.
-   * @type {Array}
-   */
-  pathsToExclude: null,
-
-  /**
-   * List of used plugins.
-   * @type {Array}
-   */
-  plugins: null,
-
-  /**
-   * @type {Array}
-   */
-  pluginsDependencies: null,
-
-  /**
-   * List of supported syntaxes.
-   * @type {Array}
-   */
-  supportedSyntaxes: null,
-
-  /**
-   * Whether verbose mode is on.
-   * @type {Boolean}
-   */
-  verbose: null,
+class Comb {
+  constructor() {
+    this.config = {};
+    this.exclude = [];
+    // Whether lint mode is on.
+    this.lint = false;
+    // List of file paths that should be excluded from processing.
+    this.pathsToExclude = null;
+    // List of used plugins.
+    this.plugins = [];
+    this.pluginsDependencies = {};
+    // List of supported syntaxes.
+    this.supportedSyntaxes = new Set();
+    // Whether verbose mode is on.
+    this.verbose = false;
+  }
 
   configure(config) {
     if (typeof config !== 'object')
@@ -60,9 +30,10 @@ Comb.prototype = {
 
     this.lint = config.lint;
     this.verbose = config.verbose;
-    this.exclude = (config.exclude || []).map(function(pattern) {
-      return new minimatch.Minimatch(pattern);
-    });
+    if (config.exclude)
+      this.exclude = config.exclude.map(function(pattern) {
+        return new minimatch.Minimatch(pattern);
+      });
 
     for (let i = 0, l = this.plugins.length; i < l; i++) {
       let plugin = this.plugins[i];
@@ -79,7 +50,7 @@ Comb.prototype = {
 
     // Chaining.
     return this;
-  },
+  }
 
   /**
    * @param {String} path
@@ -93,7 +64,7 @@ Comb.prototype = {
       that.lint = lint;
       return errors;
     });
-  },
+  }
 
   /**
    * @param {String} path
@@ -107,7 +78,7 @@ Comb.prototype = {
       that.lint = lint;
       return errors;
     });
-  },
+  }
 
   /**
    * @param {String} path
@@ -121,7 +92,7 @@ Comb.prototype = {
       that.lint = lint;
       return errors;
     });
-  },
+  }
 
   /**
    * @param {String} text
@@ -134,7 +105,7 @@ Comb.prototype = {
     let errors = this.processString(text, options);
     this.lint = lint;
     return errors;
-  },
+  }
 
   /**
    * @param {Node} ast
@@ -163,11 +134,11 @@ Comb.prototype = {
     }
 
     return errors;
-  },
+  }
 
   pluginAlreadyUsed(name) {
     return this.pluginIndex(name) !== -1;
-  },
+  }
 
   pluginIndex(name) {
     let index = -1;
@@ -178,7 +149,7 @@ Comb.prototype = {
       }
     });
     return index;
-  },
+  }
 
   /**
    * Processes directory recursively.
@@ -203,7 +174,7 @@ Comb.prototype = {
         return [].concat.apply([], results);
       });
     });
-  },
+  }
 
   /**
    * Processes single file.
@@ -235,7 +206,7 @@ Comb.prototype = {
         return 1;
       });
     });
-  },
+  }
 
   /**
    * Processes directory or file.
@@ -260,7 +231,7 @@ Comb.prototype = {
         }
       });
     });
-  },
+  }
 
   /**
    * Processes a string.
@@ -296,7 +267,7 @@ Comb.prototype = {
     } else {
       return this.processTree(tree, syntax).toString();
     }
-  },
+  }
 
   /**
    * @param {Node} ast
@@ -315,7 +286,7 @@ Comb.prototype = {
     });
 
     return ast;
-  },
+  }
 
   /**
    * Checks if path is not present in `exclude` list.
@@ -329,7 +300,7 @@ Comb.prototype = {
     return this.exclude.every(function(e) {
       return !e.match(path);
     });
-  },
+  }
 
   /**
    * Checks if specified path is not present in `exclude` list and it has one of
@@ -348,7 +319,7 @@ Comb.prototype = {
       return false;
 
     return this.shouldProcess(path);
-  },
+  }
 
   /**
    * Add a plugin.
@@ -401,6 +372,6 @@ Comb.prototype = {
     // Chaining.
     return this;
   }
-};
+}
 
 module.exports = Comb;
