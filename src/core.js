@@ -1,4 +1,5 @@
 require('babel/polyfill');
+let fs = require('fs');
 let gonzales = require('gonzales-pe');
 let minimatch = require('minimatch');
 let Errors = require('./errors');
@@ -53,18 +54,32 @@ class Comb {
     return this;
   }
 
+  getAcceptableFilesFromDirectory(path) {
+    if (!this.shouldProcess(path)) return;
+
+    let files = [];
+    let filesInThisDir = fs.readdirSync(path);
+
+    for (let i = 0, fl = filesInThisDir.length; i < fl; i++) {
+      let fullname = path + '/' + filesInThisDir[i];
+      let stat = fs.statSync(fullname);
+      if (stat.isDirectory() && this.shouldProcess(fullname))
+        files = files.concat(this.getAcceptableFilesFromDirectory(fullname));
+      else if (this.shouldProcessFile(fullname))
+        files.push(fullname);
+    }
+
+    return files;
+  }
+
   /**
    * @param {String} path
    * @returns {Promise}
    */
   lintDirectory(path) {
-    let lint = this.lint;
-    let that = this;
-    this.lint = true;
-    return this.processDirectory(path).then(function(errors) {
-      that.lint = lint;
-      return errors;
-    });
+    let files = this.getAcceptableFilesFromDirectory(path);
+    let promises = files.map((file) => this.lintFile(file));
+    return Promise.all(promises);
   }
 
   /**
@@ -72,46 +87,36 @@ class Comb {
    * @returns {Promise}
    */
   lintFile(path) {
-    let lint = this.lint;
-    let that = this;
-    this.lint = true;
-    return this.processFile(path).then(function(errors) {
-      that.lint = lint;
-      return errors;
+    let syntax = path.split('.').pop();
+    return this.readFile(path).then((string) => {
+      return this.lintString(string, {syntax: syntax, filename: path});
     });
   }
 
   /**
    * @param {String} path
-   * @returns {Promise}
    */
   lintPath(path) {
-    let lint = this.lint;
-    let that = this;
-    this.lint = true;
-    return this.processPath(path).then(function(errors) {
-      that.lint = lint;
-      return errors;
-    });
+    path = path.replace(/\/$/, '');
+    return fs.statSync(path).isDirectory() ?
+      this.lintDirectory(path) :
+      this.lintFile(path);
   }
 
   /**
    * @param {String} text
    * @param {{context: String, filename: String, syntax: String}} options
-   * @returns {Array} List of found errors
+   * @returns {Promise} Resolves with <Array> list of found errors.
    */
   lintString(text, options) {
-    let lint = this.lint;
-    this.lint = true;
-    let errors = this.processString(text, options);
-    this.lint = lint;
-    return errors;
+    return this.parseString(text, options)
+      .then(this.lintTree.bind(this));
   }
 
   /**
    * @param {Node} ast
    * @param {String=} filename
-   * @return {Array} List of errors
+   * @return {Promise} Resolves with <Array> list of errors.
    */
   lintTree(ast, filename) {
     let errors = [];
@@ -135,6 +140,32 @@ class Comb {
       }
 
       resolve(errors);
+    });
+  }
+
+  parseString(text, options) {
+    let syntax = options && options.syntax;
+    let filename = options && options.filename || '';
+    let context = options && options.context;
+    let tree;
+
+    if (!text) return this.lint ? [] : text;
+
+    if (!syntax) syntax = 'css';
+    this.syntax = syntax;
+
+    return new Promise(function(resolve) {
+      try {
+        tree = gonzales.parse(text, {syntax: syntax, rule: context});
+        resolve(tree, filename);
+      } catch (e) {
+        let version = require('../package.json').version;
+        let message = filename ? [filename] : [];
+        message.push(e.message);
+        message.push('CSScomb Core version: ' + version);
+        e.stack = e.message = message.join('\n');
+        throw e;
+      }
     });
   }
 
@@ -210,28 +241,33 @@ class Comb {
     });
   }
 
+  readFile(path) {
+    return new Promise((resolve, reject) => {
+      if (!this.shouldProcessFile(path)) reject();
+
+      fs.readFile(path, 'utf8', function(e, string) {
+        if (e) reject();
+        resolve(string);
+      });
+    });
+  }
+
+
   /**
    * Processes directory or file.
    *
-   * @param {String} path
    * @returns {Promise}
    */
   processPath(path) {
     let that = this;
     path = path.replace(/\/$/, '');
 
-    return vfs.exists(path).then(function(exists) {
-      if (!exists) {
-        console.warn('Path ' + path + ' was not found.');
-        return;
+    return vfs.stat(path).then(function(stat) {
+      if (stat.isDirectory()) {
+        return that.processDirectory(path);
+      } else {
+        return that.processFile(path);
       }
-      return vfs.stat(path).then(function(stat) {
-        if (stat.isDirectory()) {
-          return that.processDirectory(path);
-        } else {
-          return that.processFile(path);
-        }
-      });
     });
   }
 
@@ -243,51 +279,29 @@ class Comb {
    * @returns {String} Processed string
    */
   processString(text, options) {
-    let syntax = options && options.syntax;
-    let filename = options && options.filename || '';
-    let context = options && options.context;
-    let tree;
-
-    if (!text) return this.lint ? [] : text;
-
-    if (!syntax) syntax = 'css';
-    this.syntax = syntax;
-
-    try {
-      tree = gonzales.parse(text, {syntax: syntax, rule: context});
-    } catch (e) {
-      let version = require('../package.json').version;
-      let message = filename ? [filename] : [];
-      message.push(e.message);
-      message.push('CSScomb Core version: ' + version);
-      e.stack = e.message = message.join('\n');
-      throw e;
-    }
-
-    if (this.lint) {
-      return this.lintTree(tree, syntax, filename);
-    } else {
-      return this.processTree(tree, syntax).toString();
-    }
+    return this.parseString(text, options)
+        .then(this.processTree.bind(this))
+        .then((ast) => ast.toString());
   }
 
   /**
    * @param {Node} ast
-   * @param {String} syntax
    * @return {Node} Transformed AST
    */
-  processTree(ast, syntax) {
+  processTree(ast) {
     let config = this.config;
 
-    this.plugins.filter(function(plugin) {
-      return plugin.value !== null &&
-             typeof plugin.process === 'function' &&
-             plugin.syntax.indexOf(syntax) !== -1;
-    }).forEach(function(plugin) {
-      plugin.process(ast, syntax, config);
-    });
+    return new Promise((resolve) => {
+      this.plugins.filter(function(plugin) {
+        return plugin.value !== null &&
+               typeof plugin.process === 'function' &&
+               plugin.syntax.indexOf(ast.syntax) !== -1;
+      }).forEach(function(plugin) {
+        plugin.process(ast, config);
+      });
 
-    return ast;
+      resolve(ast);
+    });
   }
 
   /**
@@ -298,6 +312,12 @@ class Comb {
    * Otherwise returns true.
    */
   shouldProcess(path) {
+    path = path.replace(/\/$/, '');
+    if (!fs.existsSync(path)) {
+      console.warn('Path ' + path + ' was not found.');
+      return false;
+    }
+
     path = path.replace(/^\.\//, '');
     return this.exclude.every(function(e) {
       return !e.match(path);
@@ -361,7 +381,7 @@ class Comb {
     }
 
     let dependents = this.pluginsDependencies[pluginName];
-    if (!dependents) return;
+    if (!dependents) return this;
 
     for (let i = 0, l = dependents.length; i < l; i++) {
       let name = dependents[i];
