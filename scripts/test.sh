@@ -9,6 +9,13 @@ function test {
     fi
 }
 
+# Run linters
+printf "\n\
+--------------\n\
+ Running JSCS\n\
+--------------\n\n"
+test ./node_modules/.bin/jscs ./src
+
 # Run tests
 printf "\n\
 ---------------\n\
