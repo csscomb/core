@@ -110,11 +110,10 @@ class Comb {
 
   /**
    * @param {Node} ast
-   * @param {String} syntax
    * @param {String=} filename
    * @return {Array} List of errors
    */
-  lintTree(ast, syntax, filename) {
+  lintTree(ast, filename) {
     let errors = [];
     let config = this.config;
 
@@ -122,9 +121,9 @@ class Comb {
       this.plugins.filter(function(plugin) {
         return typeof plugin.value !== null &&
                typeof plugin.lint === 'function' &&
-               plugin.syntax.indexOf(syntax) !== -1;
+               plugin.syntax.indexOf(ast.syntax) !== -1;
       }).forEach(function(plugin) {
-        let e = plugin.lint(ast, syntax, config);
+        let e = plugin.lint(ast, config);
         errors = errors.concat(e);
       });
 
