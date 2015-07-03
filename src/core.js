@@ -133,21 +133,19 @@ class Comb {
 
     return vfs.read(path, 'utf8').then(function(data) {
       let syntax = path.split('.').pop();
-      let processedData = that.processString(data, {
+      that.processString(data, {
         syntax: syntax,
         filename: path
-      });
+      }).then(function(processedData) {
+        if (data === processedData) {
+          if (that.verbose) console.log(' ', path);
+          return 0;
+        }
 
-      if (that.lint) return processedData;
-
-      if (data === processedData) {
-        if (that.verbose) console.log(' ', path);
-        return 0;
-      }
-
-      return vfs.write(path, processedData, 'utf8').then(function() {
-        if (that.verbose) console.log('✓', path);
-        return 1;
+        return vfs.write(path, processedData, 'utf8').then(function() {
+          if (that.verbose) console.log('✓', path);
+          return 1;
+        });
       });
     });
   }
