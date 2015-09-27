@@ -38,6 +38,14 @@ describe('Core methods', function() {
       assert.deepEqual(comb.exclude, [minimatchedPattern]);
     });
 
+    it('should create syntax map', function() {
+      var config = {syntax: {'.css': 'scss'}};
+
+      comb.configure(config);
+      assert.equal(comb.syntaxMap.size, 1);
+      assert.equal(comb.syntaxMap.get('.css'), 'scss');
+    });
+
     it('should not configure plugins that have not been added', function() {
       var config = {animal: 'panda'};
       comb.configure(config);
@@ -95,6 +103,20 @@ describe('Core methods', function() {
             done();
           });
     });
+
+    it('should use syntax from config', function(done) {
+      comb.use(require('./helpers/plugin_syntax_map'))
+        .configure({
+          'syntax-map': true,
+          syntax: {
+            '.tcss': 'scss'
+          }
+        })
+        .lintFile(__dirname + '/helpers/scss.tcss')
+        .then(function() {
+          done();
+        });
+    })
   });
 
   describe('lintPath', function() {
