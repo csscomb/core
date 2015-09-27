@@ -21,6 +21,8 @@ class Comb {
     this.pluginsDependencies = {};
     // List of supported syntaxes.
     this.supportedSyntaxes = new Set();
+    // Mapping file extensions to syntax
+    this.syntaxMap = new Map();
     // Whether verbose mode is on.
     this.verbose = false;
   }
@@ -36,6 +38,12 @@ class Comb {
       this.exclude = config.exclude.map(function(pattern) {
         return new minimatch.Minimatch(pattern);
       });
+
+    if (config.syntax) {
+      for (let key in config.syntax) {
+        this.syntaxMap.set(key, config.syntax[key]);
+      }
+    }
 
     for (let i = 0, l = this.plugins.length; i < l; i++) {
       let plugin = this.plugins[i];
@@ -69,7 +77,7 @@ class Comb {
    * @returns {Promise}
    */
   lintFile(path) {
-    let syntax = path.split('.').pop();
+    let syntax = this._extractSyntax(path);
     return this._readFile(path).then((string) => {
       return this.lintString(string, {syntax: syntax, filename: path});
     });
@@ -132,7 +140,7 @@ class Comb {
     if (!this._shouldProcessFile(path)) return;
 
     return vfs.read(path, 'utf8').then(function(data) {
-      let syntax = path.split('.').pop();
+      let syntax = that._extractSyntax(path);
       that.processString(data, {
         syntax: syntax,
         filename: path
@@ -375,7 +383,7 @@ class Comb {
 
   /**
    * Checks if specified path is not present in `exclude` list and it has one of
-   * acceptable extensions.
+   * acceptable syntaxes.
    *
    * @param {String} path
    * @returns {Boolean} False if the path either has unacceptable extension or
@@ -383,13 +391,25 @@ class Comb {
    */
   _shouldProcessFile(path) {
     // Get file's extension:
-    var syntax = path.split('.').pop();
+    var syntax = this._extractSyntax(path);
 
     // Check if syntax is supported. If not, ignore the file:
     if (!this.supportedSyntaxes.has(syntax))
       return false;
 
     return this._shouldProcess(path);
+  }
+
+  /**
+   * Extract syntax by file path
+   *
+   * @param {String} path
+   * @returns {String} syntax
+   */
+  _extractSyntax(path) {
+    var extension = path.split('.').pop();
+
+    return this.syntaxMap.get('.' + extension) || extension;
   }
 }
 
