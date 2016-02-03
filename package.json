@@ -3,7 +3,7 @@
   "version": "3.0.0-8",
   "description": "Framework for writing postprocessors",
   "dependencies": {
-    "gonzales-pe": "tonyganch/gonzales-pe#build-dev",
+    "gonzales-pe": "sodatea/gonzales-pe#dev",
     "minimatch": "0.2.12",
     "vow": "0.4.4",
     "vow-fs": "0.3.2"
@@ -31,7 +31,6 @@
   "scripts": {
     "build": "./scripts/build.sh",
     "coverage": "./scripts/build.sh && ./scripts/coverage.sh",
-    "postinstall": "./scripts/postinstall.sh",
     "test": "./scripts/build.sh && ./scripts/test.sh"
   }
 }
