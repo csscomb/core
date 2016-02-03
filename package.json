@@ -26,6 +26,7 @@
   "license": "MIT",
   "repository": "https://github.com/csscomb/core",
   "scripts": {
+    "postinstall": "./scripts/postinstall.sh",
     "build": "./scripts/build.sh",
     "coverage": "./scripts/build.sh && ./scripts/coverage.sh",
     "test": "./scripts/build.sh && ./scripts/test.sh"
