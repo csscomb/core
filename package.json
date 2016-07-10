@@ -3,7 +3,7 @@
   "version": "3.0.0-8",
   "description": "Framework for writing postprocessors",
   "dependencies": {
-    "gonzales-pe": "sodatea/gonzales-pe#dev",
+    "gonzales-pe": "^3.3.6",
     "minimatch": "0.2.12",
     "vow": "0.4.4",
     "vow-fs": "0.3.2"
