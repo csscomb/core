@@ -29,6 +29,12 @@ class Comb {
     this.verbose = false;
   }
 
+  /**
+   * Loads configuration from JSON.
+   *
+   * @param {!Object} config
+   * @return {!Comb}
+   */
   configure(config) {
     if (typeof config !== 'object')
       // TODO: throw error
@@ -65,6 +71,8 @@ class Comb {
   }
 
   /**
+   * Lints all files in a directory.
+   *
    * @param {String} path
    * @returns {Promise}
    */
@@ -75,6 +83,8 @@ class Comb {
   }
 
   /**
+   * Lints a single file.
+   *
    * @param {String} path
    * @returns {Promise}
    */
@@ -86,6 +96,8 @@ class Comb {
   }
 
   /**
+   * Lints a file or a directory.
+   *
    * @param {String} path
    */
   lintPath(path) {
@@ -96,6 +108,8 @@ class Comb {
   }
 
   /**
+   * Lints a string.
+   *
    * @param {String} text
    * @param {{context: String, filename: String, syntax: String}} options
    * @returns {Promise} Resolves with <Array> list of found errors.
@@ -183,7 +197,7 @@ class Comb {
    *
    * @param {String} text
    * @param {{context: String, filename: String, syntax: String}} options
-   * @returns {String} Processed string
+   * @returns {Promise<string>} Resolves in processed string
    */
   processString(text, options) {
     return this._parseString(text, options)
