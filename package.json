@@ -31,7 +31,6 @@
   "scripts": {
     "build": "./scripts/build.sh",
     "coverage": "./scripts/build.sh && ./scripts/coverage.sh",
-    "postinstall": "./scripts/postinstall.sh",
     "test": "./scripts/build.sh && ./scripts/test.sh"
   }
 }
