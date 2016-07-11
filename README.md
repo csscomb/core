@@ -16,7 +16,8 @@ var Comb = require('csscomb-core');
 var comb = new Comb(options, 'css');
 ```
 
-For a simple example of usage take a look [at a template project](https://github.com/csscomb/core-template).  
+For a simple example of usage take a look
+[at a template project](https://github.com/csscomb/core-template).  
 Feel free to fork it and modify.
 
 ## List of public methods
@@ -60,6 +61,39 @@ Can be used inside plugin's `process` method.
 
 - Return: *{String}*  Syntax name
 
+### comb.lintPath(path)
+
+Lint a file or a directory.
+
+- Params: *{String}*  Path to file or directory</td>
+- Return: *{Promise}*
+
+### comb.lintDirectory(path)
+
+Lint all files in a directory.
+
+- Params: *{String}*  Path to file or directory</td>
+- Return: *{Promise}*
+
+### comb.lintFile(path)
+
+Lint a single file.
+
+- Params: *{String}*  Path to file
+- Return: *{Promise}*
+
+### comb.lintString(string, options)
+
+Lint a string.
+
+- Params:  
+  *{String}*  Code to process  
+  *{{context: String, filename: String, syntax: String}}* Options (optional)
+  where *context* is
+  Gonzales PE rule, *filename* is a file's name that is used to display errors and
+  *syntax* is syntax name with `css` being a default value.  
+- Return: *{Promise<Array>}*  Resolves with list of found errors.  
+
 ### comb.processPath(path)
 
 Process a file or a directory.
@@ -91,7 +125,7 @@ Process a string.
   where *context* is
   Gonzales PE rule, *filename* is a file's name that is used to display errors and
   *syntax* is syntax name with `css` being a default value.  
-- Return: *{String}*  Processed string
+- Return: *{Promise<string>}*  Resolves with processed string.  
 
 ## Writing a plugin
 
