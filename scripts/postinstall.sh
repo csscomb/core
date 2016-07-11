@@ -1,6 +1,1 @@
-#!/bin/bash
-
-if [[ ! -d 'lib' ]]; then
-  npm i babel@5 --save
-  ./scripts/build.sh
-fi
+cd ./node_modules/gonzales-pe && npm i && npm run build && cd -

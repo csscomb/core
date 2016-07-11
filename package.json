@@ -15,6 +15,9 @@
     "mocha": "1.20.x",
     "unit-coverage": "3.4.x"
   },
+  "files": [
+    "lib"
+  ],
   "main": "lib/core.js",
   "maintainers": [
     {
