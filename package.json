@@ -10,6 +10,7 @@
   },
   "devDependencies": {
     "babel": "^5.5.3",
+    "babel-polyfill": "^6.9.1",
     "jscs": "1.13.x",
     "jshint": "2.8.x",
     "mocha": "1.20.x",
